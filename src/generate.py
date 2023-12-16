@@ -1,7 +1,10 @@
 from pydantic import BaseModel, Field
 from typing import List
+from jinja2 import Template
 import instructor
 from openai import OpenAI
+
+OPENAI_MODEL = "gpt-4-1106-preview"
 
 class Question(BaseModel):
     """Correctly resolved question from the given text"""
@@ -13,28 +16,35 @@ class SurveyQuestions(BaseModel):
     """Correctly resolved set of survey questions from the given text"""
     questions: List[Question] = Field(..., description="List of survey questions inspired by the given text, should be 3 or less")
 
+QUESTION_GENERATION_SYSTEM_PROMPT = """
+The following text is going to be augmented with insights derived from survey data.
+Your task is to create survey questions that will help gather these insights.
+Please formulate questions that are relevant to the text and suitable for a broad audience.
+Ensure that your questions are concise and clear.
+
+Example:
+
+Text: "Quentin Tarantino enjoys eating apples and driving electric cars."
+
+Survey Questions:
+
+"What is your favorite fruit?"
+"Are you interested in purchasing an electric car?"
+"Do you appreciate Quentin Tarantino's movies?"
+"""
+
 # Apply the patch to the OpenAI client
 # enables response_model keyword
 client = instructor.patch(OpenAI())
 
-system_prompt = """
-The following text is to be augmented with insights from survey data. Please consider survey questions that can be asked to a broad audience. Be concise and clear.
-
-Example:
-
-Text: "Quentin Tarantino likes to eat apples and drive electric cars."
-Question 1: "Do you like to eat apples?"
-Question 2: "Do you like to drive electric cars?"
-Question 3: "Do you support Quentin Tarantino?"
-"""
-def generate_questions(data: str) -> SurveyQuestions:
+def generate_questions(data: str, model: str = OPENAI_MODEL) -> SurveyQuestions:
     return client.chat.completions.create(
-        model="gpt-4-1106-preview",
+        model=model,
         response_model=SurveyQuestions,
         messages=[
             {
                 "role": "system",
-                "content": system_prompt
+                "content": QUESTION_GENERATION_SYSTEM_PROMPT
             },
             {
                 "role": "user",
@@ -42,3 +52,42 @@ def generate_questions(data: str) -> SurveyQuestions:
             },
         ],
     )
+
+OUTPUT_GENERATION_SYSTEM_PROMPT = """
+The following text is going to be augmented with insights derived from survey data.
+Your task is to rewrite the text to include the insights.
+Use the survey questions as a guide to what insights are relevant to the text.
+Use the writing style of fivethirtyeight.com as a reference.
+Ensure that the text is concise and clear.
+"""
+
+OUTPUT_GENERATION_USER_PROMPT = Template(
+"""
+Rewrite the following text to include insights derived from survey data.
+Consider the survey questions as a guide for which insights are relevant to include in the rewritten text.
+Use the writing style of fivethirtyeight.com, aiming for a data-driven, conversational tone.
+------
+Original Text:
+{{text}}
+------
+Survey Data for Augmentation:
+{{context}}
+------
+Rewritten Text: 
+"""
+)
+
+def rewrite_text(text: str, context=str, model: str = OPENAI_MODEL) -> str:
+    return client.chat.completions.create(
+        model=model,
+        messages=[
+            {
+                "role": "system",
+                "content": OUTPUT_GENERATION_SYSTEM_PROMPT
+            },
+            {
+                "role": "user",
+                "content": OUTPUT_GENERATION_USER_PROMPT.render(text=text, context=context)
+            },
+        ],
+    ).choices[0].message.content

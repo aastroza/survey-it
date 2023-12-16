@@ -3,3 +3,4 @@ openai==1.4.0
 instructor==0.4.2
 ipykernel
 pandas
+jinja2
