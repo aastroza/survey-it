@@ -9,3 +9,7 @@ conda create --name survey-it -c conda-forge python=3.11
 conda activate survey-it
 pip install -r requirements.txt
 ```
+
+## Example Notebook
+
+[Proof of Concept](notebooks/00_poc.ipynb)
