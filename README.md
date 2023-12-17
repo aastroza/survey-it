@@ -13,3 +13,5 @@ pip install -r requirements.txt
 ## Example Notebook
 
 [Proof of Concept](notebooks/00_poc.ipynb)
+
+<img src="reports/figures/diagram_rag.PNG" alt="sarcasm" width="800"/>
