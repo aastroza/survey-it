@@ -4,7 +4,7 @@ from jinja2 import Template
 import instructor
 from openai import OpenAI
 
-OPENAI_MODEL = "gpt-4-1106-preview"
+from src.config import OPENAI_MODEL
 
 class Question(BaseModel):
     """Correctly resolved question from the given text"""
