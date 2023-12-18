@@ -91,3 +91,50 @@ def rewrite_text(text: str, context=str, model: str = OPENAI_MODEL) -> str:
             },
         ],
     ).choices[0].message.content
+
+class Experiment(BaseModel):
+    """Correctly resolved experiment from the given question"""
+    id: int
+    pre_cooked_levels_lookup: List[str] = Field(..., description="List of possible multiple choices responses suitable by the given question, should be 2 or less")
+    population_traits: List[str] = Field(..., description="List of possible population traits suitable by the given question, should be 2 or less")
+    chain_of_thought: str = Field(..., description="Think step by step to elaborate the responses and traits")
+
+EXPERIMENT_GENERATION_SYSTEM_PROMPT = """
+The following question is going to be used in a Causal Experiment Simulator to generate syntethic survey data.
+Your task is to create the input parameters that will help gather the experiment results.
+Ensure that your response is concise and clear.
+
+---
+Example:
+
+Question: 'Will this car have advanced safety features?'
+Response:
+{
+  "pre_cooked_levels_lookup": [
+        "Advanced airbag system to protect passengers",
+        "Lane keep assist to prevent drifting into other lanes"
+      ]
+  "population_traits": [
+    "educational attainment",
+    "english language ability"
+  ],
+  "experimentor_why_question_prompt": "I would like to design a new electric car for the American markets",
+}
+---
+"""
+
+def generate_experiment(data: str, model: str = OPENAI_MODEL) -> Experiment:
+    return client.chat.completions.create(
+        model=model,
+        response_model=Experiment,
+        messages=[
+            {
+                "role": "system",
+                "content": EXPERIMENT_GENERATION_SYSTEM_PROMPT
+            },
+            {
+                "role": "user",
+                "content": f"Create the causal experiment inspired by the following question: {data}",
+            },
+        ],
+    )
