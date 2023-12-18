@@ -14,4 +14,8 @@ pip install -r requirements.txt
 
 [Proof of Concept](notebooks/00_poc.ipynb)
 
+### Semantic Search over Survey Question DB
 <img src="reports/figures/diagram_rag.PNG" alt="sarcasm" width="800"/>
+
+### Using a Causal Experiment Simulator
+<img src="reports/figures/diagram_experiment_simulator.PNG" alt="sarcasm" width="800"/>
